@@ -1,10 +1,30 @@
-const { ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
 const { getDb } = require("../db");
+
+const createJwtToken = (payload, secretKey) => {
+  return jwt.sign(payload, secretKey, {
+    expiresIn: "1h", // Token expires in 1 hour
+  });
+};
+
+const getUser = async (email) => {
+  const db = getDb();
+  const users = db.collection("users");
+  const result = await users.findOneAndUpdate(
+    { email },
+    { $setOnInsert: { email, createdAt: new Date() } },
+    {
+      upsert: true,
+      returnDocument: "after", // returns the document AFTER insertion/update
+    },
+  );
+
+  return result;
+};
 
 const sendOtp = async (req, res) => {
   const db = getDb();
-  console.log("## connected to DB");
-  otpCollection = db.collection("otps");
+  const otpCollection = db.collection("otps");
   // Auto-delete OTP after 5 minutes
   // await otpCollection.createIndex(
   //   { createdAt: 1 },
@@ -38,12 +58,22 @@ const sendOtp = async (req, res) => {
 };
 
 const verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
+  const db = getDb();
+  const otpCollection = db.collection("otps");
+  const { email: reqEmail, otp } = req.body;
+  const email = reqEmail.toLowerCase();
   const record = await otpCollection.findOne({ email, otp });
 
   if (record) {
     await otpCollection.deleteOne({ email });
-    res.json({ success: true, token: "YOUR_JWT_TOKEN" }); // Generate a real JWT here
+
+    const user = await getUser(email);
+
+    const token = createJwtToken(
+      { userId: user._id, email },
+      process.env.ACCESS_TOKEN_SECRET,
+    );
+    res.json({ success: true, token }); // Generate a real JWT here
   } else {
     res.status(400).json({ success: false, message: "Invalid or expired OTP" });
   }

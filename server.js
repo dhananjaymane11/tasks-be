@@ -4,6 +4,7 @@ const { connectToDb } = require("./db");
 const auth = require("./middleware/auth");
 const loginRoutes = require("./routes/loginRoutes");
 const taskRoutes = require("./routes/tasksRoutes");
+const notesRoutes = require("./routes/notesRoutes");
 
 require("dotenv").config();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use("/api/login", loginRoutes);
 app.use("/api", auth);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/notes", notesRoutes);
 
 connectToDb((err) => {
   if (!err) {

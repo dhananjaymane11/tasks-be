@@ -34,7 +34,7 @@ const sendOtp = async (req, res) => {
   const { email } = req.body;
 
   let otp;
-  if (email === "admin@priorityflow.com") {
+  if (email === "admin@priority-flow.co.in") {
     otp = "123456";
   } else {
     otp = Math.floor(100000 + Math.random() * 900000).toString();

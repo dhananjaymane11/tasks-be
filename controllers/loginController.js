@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { getDb } = require("../db");
+const { sendOtpEmail } = require("../services/emailService");
 
 const createJwtToken = (payload, secretKey) => {
   return jwt.sign(payload, secretKey, {
@@ -48,19 +49,20 @@ const sendOtp = async (req, res) => {
     { upsert: true },
   );
 
-  // const transporter = nodemailer.createTransport({
-  //   service: 'gmail',
-  //   auth: { user: process.env.EMAIL, pass: process.env.APP_PASSWORD }
-  // });
+  if (email === "admin@priority-flow.co.in") {
+    return res.status(200).json({ success: true, message: "OTP sent!" });
+  }
 
-  // await transporter.sendMail({
-  //   from: process.env.EMAIL,
-  //   to: email,
-  //   subject: 'Your Login OTP',
-  //   text: `Your OTP is ${otp}. It expires in 3 minutes.`
-  // });
-
-  res.json({ success: true, message: "OTP sent!" });
+  try {
+    await sendOtpEmail(email, otp);
+    return res
+      .status(200)
+      .json({ success: true, message: "OTP sent successfully to email." });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ error: "Failed to dispatch verification code." });
+  }
 };
 
 const verifyOtp = async (req, res) => {
